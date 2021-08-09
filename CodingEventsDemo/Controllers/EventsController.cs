@@ -8,25 +8,32 @@ using CodingEventsDemo.ViewModels;
 using Microsoft.AspNetCore.Mvc;
 
 // For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
-
-namespace coding_events_practice.Controllers
+namespace CodingEvents.Controllers
 {
     public class EventsController : Controller
     {
-        // GET: /<controller>/
+        private EventDbContext _context;
+
+
+        public EventsController(EventDbContext dbContext)
+        {
+            _context = dbContext;
+        }
+
+
         public IActionResult Index()
         {
-            List<Event> events = new List<Event>(EventData.GetAll());
+            List<Event> events = _context.Events.ToList();
 
             return View(events);
         }
-
         public IActionResult Add()
         {
             AddEventViewModel addEventViewModel = new AddEventViewModel();
 
             return View(addEventViewModel);
         }
+
 
         [HttpPost]
         public IActionResult Add(AddEventViewModel addEventViewModel)
@@ -41,7 +48,8 @@ namespace coding_events_practice.Controllers
                     Type = addEventViewModel.Type
                 };
 
-                EventData.Add(newEvent);
+                _context.Events.Add(newEvent); // This stages the data
+                _context.SaveChanges(); // This actually saves the data in the DB
 
                 return Redirect("/Events");
             }
@@ -49,22 +57,28 @@ namespace coding_events_practice.Controllers
             return View(addEventViewModel);
         }
 
+
         public IActionResult Delete()
         {
-            ViewBag.events = EventData.GetAll();
-
+            ViewBag.events = _context.Events.ToList();
             return View();
         }
-
         [HttpPost]
         public IActionResult Delete(int[] eventIds)
         {
             foreach (int eventId in eventIds)
             {
-                EventData.Remove(eventId);
+                Event theEvent = _context.Events.Find(eventId);
+                _context.Events.Remove(theEvent);
             }
 
+            _context.SaveChanges();
             return Redirect("/Events");
         }
+
+
+
     }
 }
+
+
